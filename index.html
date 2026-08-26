@@ -2035,6 +2035,17 @@ html.sandvik-auth-pending body{
 }
 </style>
 
+
+<style id="sandvik-direct-auth-v27">
+#sandvikSetupToggle,
+#sandvikConnectionSetup{
+  display:none!important;
+}
+.sandvik-login-body{
+  padding-bottom:26px!important;
+}
+</style>
+
 </head>
 <body>
 <script>document.documentElement.classList.add("sandvik-auth-pending");</script>
@@ -5958,7 +5969,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="sandvik-login-kicker">AUTHORIZED ACCESS // PLANNING CONTROL</div>
       <h2 class="sandvik-login-title">SANDVIK PLANNING LOG IN</h2>
-      <div class="sandvik-login-sub">Sign in with your authorized Supabase account.</div>
+      <div class="sandvik-login-sub">Enter your authorized email and password.</div>
     </div>
 
     <form class="sandvik-login-body" id="sandvikLoginForm" autocomplete="on">
@@ -6006,6 +6017,7 @@ document.addEventListener('DOMContentLoaded', () => {
 (function(){
   const CFG='sandvikSupabaseConfig';
   const DEFAULT_URL='https://dsbntgnmqazlwmxxkojw.supabase.co';
+  const EMBEDDED_KEY='sb_publishable_kZ2-gQyxEPGsOgLV9fUIWA_xhx_9eck';
 
   const gate=document.getElementById('sandvikAuthGate');
   const form=document.getElementById('sandvikLoginForm');
@@ -6033,15 +6045,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const normalizeUrl=v=>String(v||'').trim().replace(/\/$/,'');
 
   function readConfig(){
+    const cfg={url:DEFAULT_URL,key:EMBEDDED_KEY};
     try{
-      const cfg=JSON.parse(localStorage.getItem(CFG)||'null');
-      return {
-        url: normalizeUrl(cfg?.url||DEFAULT_URL),
-        key: String(cfg?.key||'').trim()
-      };
-    }catch(e){
-      return {url:DEFAULT_URL,key:''};
-    }
+      localStorage.setItem(CFG,JSON.stringify(cfg));
+    }catch(e){}
+    return cfg;
   }
 
   function applyConfigToDashboard(cfg){
@@ -6056,13 +6064,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function saveConfig(){
-    const cfg={
-      url: normalizeUrl(authUrl.value||DEFAULT_URL),
-      key: String(authKey.value||'').trim()
-    };
-    if(!cfg.url) throw new Error('Enter the Supabase Project URL.');
-    if(!cfg.key) throw new Error('Paste the Supabase publishable/anon key.');
-    localStorage.setItem(CFG,JSON.stringify(cfg));
+    const cfg={url:DEFAULT_URL,key:EMBEDDED_KEY};
+    try{localStorage.setItem(CFG,JSON.stringify(cfg));}catch(e){}
     currentConfig=cfg;
     authClient=null;
     applyConfigToDashboard(cfg);
@@ -6074,11 +6077,6 @@ document.addEventListener('DOMContentLoaded', () => {
     authUrl.value=currentConfig.url||DEFAULT_URL;
     authKey.value=currentConfig.key||'';
 
-    if(!currentConfig.key){
-      setup.classList.add('open');
-      setupToggle.textContent='▾ DATABASE CONNECTION SETUP';
-      throw new Error('Connection key is not saved in this browser. Open Database Connection Setup and paste your publishable/anon key.');
-    }
     if(!window.supabase?.createClient){
       throw new Error('Supabase library did not load. Check your internet connection and refresh.');
     }
@@ -6208,12 +6206,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Pre-fill connection controls from browser storage before checking session.
   currentConfig=readConfig();
-  authUrl.value=currentConfig.url||DEFAULT_URL;
-  authKey.value=currentConfig.key||'';
-  if(!currentConfig.key){
-    setup.classList.add('open');
-    setupToggle.textContent='▾ DATABASE CONNECTION SETUP';
-  }
+  authUrl.value=DEFAULT_URL;
+  authKey.value=EMBEDDED_KEY;
+  applyConfigToDashboard(currentConfig);
 
   restoreSession();
 })();
